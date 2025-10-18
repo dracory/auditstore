@@ -16,10 +16,10 @@ type StoreInterface interface {
 	AuditGet(id string) (RecordInterface, error)
 
 	// AuditList retrieves a list of audit records based on a query
-	AuditList(query AuditQueryInterface) ([]RecordInterface, error)
+	AuditList(query RecordQueryInterface) ([]RecordInterface, error)
 
 	// AuditCount retrieves the count of audit records based on a query
-	AuditCount(query AuditQueryInterface) (int64, error)
+	AuditCount(query RecordQueryInterface) (int64, error)
 
 	// AuditDelete deletes an audit record by its ID
 	AuditDelete(id string) error

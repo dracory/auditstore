@@ -125,7 +125,7 @@ func TestStoreAuditList(t *testing.T) {
 	}
 
 	// Test listing all audits
-	query := NewAuditQuery()
+	query := NewRecordQuery()
 	audits, err := store.AuditList(query)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -136,7 +136,7 @@ func TestStoreAuditList(t *testing.T) {
 	}
 
 	// Test filtering by object type
-	query = NewAuditQuery()
+	query = NewRecordQuery()
 	query = query.SetObjectType("user")
 	audits, err = store.AuditList(query)
 	if err != nil {
@@ -148,7 +148,7 @@ func TestStoreAuditList(t *testing.T) {
 	}
 
 	// Test pagination
-	query = NewAuditQuery()
+	query = NewRecordQuery()
 	query = query.SetLimit(2).SetOffset(0)
 	audits, err = store.AuditList(query)
 	if err != nil {
@@ -180,7 +180,7 @@ func TestStoreAuditCount(t *testing.T) {
 	}
 
 	// Count all audits
-	count, err := store.AuditCount(NewAuditQuery())
+	count, err := store.AuditCount(NewRecordQuery())
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -190,7 +190,7 @@ func TestStoreAuditCount(t *testing.T) {
 	}
 
 	// Count with filter
-	count, err = store.AuditCount(NewAuditQuery().SetObjectType("user"))
+	count, err = store.AuditCount(NewRecordQuery().SetObjectType("user"))
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}

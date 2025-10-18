@@ -178,7 +178,7 @@ func (st *storeImplementation) AuditGet(id string) (RecordInterface, error) {
 }
 
 // AuditList retrieves a list of audit records based on a query
-func (st *storeImplementation) AuditList(query AuditQueryInterface) ([]RecordInterface, error) {
+func (st *storeImplementation) AuditList(query RecordQueryInterface) ([]RecordInterface, error) {
 	// Build the select dataset
 	ds, _, err := query.ToSelectDataset(st.dbDriverName, st.auditTableName)
 	if err != nil {
@@ -212,7 +212,7 @@ func (st *storeImplementation) AuditList(query AuditQueryInterface) ([]RecordInt
 }
 
 // AuditCount retrieves the count of audit records based on a query
-func (st *storeImplementation) AuditCount(query AuditQueryInterface) (int64, error) {
+func (st *storeImplementation) AuditCount(query RecordQueryInterface) (int64, error) {
 	// Build the select dataset for count
 	ds, _, err := query.ToSelectDataset(st.dbDriverName, st.auditTableName)
 	if err != nil {

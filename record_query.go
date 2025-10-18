@@ -6,7 +6,7 @@ import (
 	"github.com/doug-martin/goqu/v9"
 )
 
-type AuditQuery struct {
+type RecordQuery struct {
 	limit         int
 	offset        int
 	orderBy       string
@@ -18,56 +18,56 @@ type AuditQuery struct {
 	createdBefore time.Time
 }
 
-// NewAuditQuery creates a new AuditQuery instance
-func NewAuditQuery() AuditQueryInterface {
-	return &AuditQuery{
+// NewRecordQuery creates a new RecordQuery instance
+func NewRecordQuery() RecordQueryInterface {
+	return &RecordQuery{
 		orderAsc: true, // Default to ascending order
 	}
 }
 
-func (q *AuditQuery) SetLimit(limit int) AuditQueryInterface {
+func (q *RecordQuery) SetLimit(limit int) RecordQueryInterface {
 	q.limit = limit
 	return q
 }
 
-func (q *AuditQuery) SetOffset(offset int) AuditQueryInterface {
+func (q *RecordQuery) SetOffset(offset int) RecordQueryInterface {
 	q.offset = offset
 	return q
 }
 
-func (q *AuditQuery) SetOrderBy(field string, ascending bool) AuditQueryInterface {
+func (q *RecordQuery) SetOrderBy(field string, ascending bool) RecordQueryInterface {
 	q.orderBy = field
 	q.orderAsc = ascending
 	return q
 }
 
-func (q *AuditQuery) SetObjectType(objectType string) AuditQueryInterface {
+func (q *RecordQuery) SetObjectType(objectType string) RecordQueryInterface {
 	q.objectType = objectType
 	return q
 }
 
-func (q *AuditQuery) SetObjectID(objectID string) AuditQueryInterface {
+func (q *RecordQuery) SetObjectID(objectID string) RecordQueryInterface {
 	q.objectID = objectID
 	return q
 }
 
-func (q *AuditQuery) SetAuthorID(authorID string) AuditQueryInterface {
+func (q *RecordQuery) SetAuthorID(authorID string) RecordQueryInterface {
 	q.authorID = authorID
 	return q
 }
 
-func (q *AuditQuery) SetCreatedAfter(t time.Time) AuditQueryInterface {
+func (q *RecordQuery) SetCreatedAfter(t time.Time) RecordQueryInterface {
 	q.createdAfter = t
 	return q
 }
 
-func (q *AuditQuery) SetCreatedBefore(t time.Time) AuditQueryInterface {
+func (q *RecordQuery) SetCreatedBefore(t time.Time) RecordQueryInterface {
 	q.createdBefore = t
 	return q
 }
 
 // ToSelectDataset builds a goqu.SelectDataset with the current query parameters
-func (q *AuditQuery) ToSelectDataset(driver string, table string) (selectDataset *goqu.SelectDataset, columns []any, err error) {
+func (q *RecordQuery) ToSelectDataset(driver string, table string) (selectDataset *goqu.SelectDataset, columns []any, err error) {
 	// Set default order by if not set
 	if q.orderBy == "" {
 		q.orderBy = COLUMN_CREATED_AT
