@@ -1,5 +1,13 @@
 # Auditstore
 
+[![Tests Status](https://github.com/dracory/auditstore/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/dracory/auditstore/actions/workflows/tests.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dracory/auditstore)](https://goreportcard.com/report/github.com/dracory/auditstore)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/dracory/auditstore)](https://pkg.go.dev/github.com/dracory/auditstore)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/dracory/auditstore?include_prereleases&style=flat-square)](https://github.com/dracory/auditstore/releases)
+[![Go version](https://img.shields.io/github/go-mod/go-version/dracory/auditstore)](https://github.com/dracory/auditstore)
+[![codecov](https://codecov.io/gh/dracory/auditstore/branch/main/graph/badge.svg)](https://codecov.io/gh/dracory/auditstore)
+
 Auditstore is a lightweight Go module for persisting domain audit records with a relational database. It wraps a standard `*sql.DB` connection, provides a fluent `RecordInterface` model, and offers query helpers and automigration support so applications can track create/update/delete history with minimal boilerplate.
 
 ## Table of Contents
