@@ -45,10 +45,10 @@ func TestStoreAuditCreate(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	audit := NewRecord()
-	audit.SetObjectType("user")
-	audit.SetObjectID("user_123")
-	audit.SetAuthorID("admin_1")
+	audit := NewRecord().
+		SetObjectType("user").
+		SetObjectID("user_123").
+		SetAuthorID("admin_1")
 
 	oldValue := map[string]interface{}{"name": "Old Name"}
 	newValue := map[string]interface{}{"name": "New Name"}
@@ -56,8 +56,8 @@ func TestStoreAuditCreate(t *testing.T) {
 	oldValueJSON, _ := json.Marshal(oldValue)
 	newValueJSON, _ := json.Marshal(newValue)
 
-	audit.SetValueOld(string(oldValueJSON))
-	audit.SetValueNew(string(newValueJSON))
+	audit = audit.SetValueOld(string(oldValueJSON)).
+		SetValueNew(string(newValueJSON))
 
 	err = store.AuditCreate(audit)
 	if err != nil {
@@ -76,10 +76,10 @@ func TestStoreAuditGet(t *testing.T) {
 	}
 
 	// Create test audit
-	audit := NewRecord()
-	audit.SetObjectType("user")
-	audit.SetObjectID("user_123")
-	audit.SetAuthorID("admin_1")
+	audit := NewRecord().
+		SetObjectType("user").
+		SetObjectID("user_123").
+		SetAuthorID("admin_1")
 
 	err = store.AuditCreate(audit)
 	if err != nil {
@@ -113,10 +113,10 @@ func TestStoreAuditList(t *testing.T) {
 
 	// Create test audits
 	for i := 0; i < 5; i++ {
-		audit := NewRecord()
-		audit.SetObjectType("user")
-		audit.SetObjectID("user_123")
-		audit.SetAuthorID("admin_1")
+		audit := NewRecord().
+			SetObjectType("user").
+			SetObjectID("user_123").
+			SetAuthorID("admin_1")
 
 		err = store.AuditCreate(audit)
 		if err != nil {
@@ -168,10 +168,10 @@ func TestStoreAuditCount(t *testing.T) {
 
 	// Create test audits
 	for i := 0; i < 3; i++ {
-		audit := NewRecord()
-		audit.SetObjectType("user")
-		audit.SetObjectID("user_123")
-		audit.SetAuthorID("admin_1")
+		audit := NewRecord().
+			SetObjectType("user").
+			SetObjectID("user_123").
+			SetAuthorID("admin_1")
 
 		err = store.AuditCreate(audit)
 		if err != nil {
@@ -207,10 +207,10 @@ func TestStoreAuditDelete(t *testing.T) {
 	}
 
 	// Create test audit
-	audit := NewRecord()
-	audit.SetObjectType("user")
-	audit.SetObjectID("user_123")
-	audit.SetAuthorID("admin_1")
+	audit := NewRecord().
+		SetObjectType("user").
+		SetObjectID("user_123").
+		SetAuthorID("admin_1")
 
 	err = store.AuditCreate(audit)
 	if err != nil {

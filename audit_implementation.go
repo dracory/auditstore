@@ -51,8 +51,9 @@ func (r *recordImplementation) ObjectType() string {
 }
 
 // SetObjectType sets the type of the audited object
-func (r *recordImplementation) SetObjectType(objectType string) {
+func (r *recordImplementation) SetObjectType(objectType string) RecordInterface {
 	r.Set(COLUMN_OBJECT_TYPE, objectType)
+	return r
 }
 
 // ObjectID returns the ID of the audited object
@@ -61,8 +62,9 @@ func (r *recordImplementation) ObjectID() string {
 }
 
 // SetObjectID sets the ID of the audited object
-func (r *recordImplementation) SetObjectID(objectID string) {
+func (r *recordImplementation) SetObjectID(objectID string) RecordInterface {
 	r.Set(COLUMN_OBJECT_ID, objectID)
+	return r
 }
 
 // ValueOld returns the old value of the audited object (JSON string)
@@ -71,8 +73,9 @@ func (r *recordImplementation) ValueOld() string {
 }
 
 // SetValueOld sets the old value of the audited object (JSON string)
-func (r *recordImplementation) SetValueOld(valueOld string) {
+func (r *recordImplementation) SetValueOld(valueOld string) RecordInterface {
 	r.Set(COLUMN_VALUE_OLD, valueOld)
+	return r
 }
 
 // ValueNew returns the new value of the audited object (JSON string)
@@ -81,8 +84,9 @@ func (r *recordImplementation) ValueNew() string {
 }
 
 // SetValueNew sets the new value of the audited object (JSON string)
-func (r *recordImplementation) SetValueNew(valueNew string) {
+func (r *recordImplementation) SetValueNew(valueNew string) RecordInterface {
 	r.Set(COLUMN_VALUE_NEW, valueNew)
+	return r
 }
 
 // AuthorID returns the ID of the user who made the change
@@ -91,8 +95,9 @@ func (r *recordImplementation) AuthorID() string {
 }
 
 // SetAuthorID sets the ID of the user who made the change
-func (r *recordImplementation) SetAuthorID(authorID string) {
+func (r *recordImplementation) SetAuthorID(authorID string) RecordInterface {
 	r.Set(COLUMN_AUTHOR_ID, authorID)
+	return r
 }
 
 // CreatedAt returns the timestamp when the audit record was created
@@ -101,8 +106,9 @@ func (r *recordImplementation) CreatedAt() string {
 }
 
 // SetCreatedAt sets the timestamp when the audit record was created
-func (r *recordImplementation) SetCreatedAt(createdAt string) {
+func (r *recordImplementation) SetCreatedAt(createdAt string) RecordInterface {
 	r.Set(COLUMN_CREATED_AT, createdAt)
+	return r
 }
 
 // CreatedAtCarbon returns the created at timestamp as a Carbon instance
