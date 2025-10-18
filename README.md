@@ -17,14 +17,14 @@ Auditstore is a lightweight Go module for persisting domain audit records with a
 - [Dependencies](#dependencies)
 
 ## Overview
-Auditstore centers on the `storeImplementation` in `store_implementation.go`, which implements `StoreInterface` for creating, reading, listing, counting, and deleting audits. Records are modeled through `recordImplementation` in `record_implementation.go`, while query construction is handled by `RecordQuery` in `record_query.go`.
+Auditstore helps your application answer the question *"what changed and when?"* by recording a trail of edits in any SQL database. You connect it to an existing `*sql.DB`, pick a table name such as `audit_log`, and the package takes care of creating the table (if you want) and storing audit entries. Each entry captures the object that changed, who made the change, and the before/after values, so you can later review activity history or troubleshoot issues.
 
 ## Features
-- **Automated schema management** via `AutoMigrate()` and SQL builders in `sqls.go` using `github.com/dracory/sb`.
-- **Fluent record modeling** with `RecordInterface` setters that wrap a `dataobject.DataObject`.
-- **Dialect-aware SQL generation** leveraging `github.com/doug-martin/goqu/v9` for inserts, selects, counts, and deletes.
-- **Query builder** supporting filtering, ordering, pagination, and date ranges through `RecordQueryInterface`.
-- **Debug logging** with structured output powered by `log/slog` when `EnableDebugMode(true)` is invoked.
+- **One-line setup**: Call `NewStore(...)` to bootstrap the audit table and get a ready-to-use store.
+- **Human-readable audit entries**: `NewRecord()` gives you chainable setters for object type, object ID, author, and JSON snapshots of old/new values.
+- **Flexible queries**: `NewRecordQuery()` lets you filter by user, object, or time range and supports pagination and sorting.
+- **Driver-aware SQL**: Under the hood, Auditstore generates SQL that works with popular drivers like SQLite, PostgreSQL, MySQL, and SQL Server.
+- **Optional verbose logging**: Flip on `EnableDebugMode(true)` to see the SQL statements being executed.
 
 ## Installation
 ```bash
