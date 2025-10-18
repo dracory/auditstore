@@ -34,4 +34,7 @@ type RecordQueryInterface interface {
 
 	// ToSelectDataset builds a goqu.SelectDataset with the current query parameters
 	ToSelectDataset(driver string, table string) (*goqu.SelectDataset, []interface{}, error)
+
+	// Validate ensures the query has valid parameters
+	Validate() error
 }

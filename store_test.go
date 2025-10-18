@@ -126,6 +126,9 @@ func TestStoreAuditList(t *testing.T) {
 
 	// Test listing all audits
 	query := NewRecordQuery()
+	if err := query.Validate(); err != nil {
+		t.Fatal("unexpected validation error:", err)
+	}
 	audits, err := store.AuditList(query)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -138,6 +141,9 @@ func TestStoreAuditList(t *testing.T) {
 	// Test filtering by object type
 	query = NewRecordQuery()
 	query = query.SetObjectType("user")
+	if err := query.Validate(); err != nil {
+		t.Fatal("unexpected validation error:", err)
+	}
 	audits, err = store.AuditList(query)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -150,6 +156,9 @@ func TestStoreAuditList(t *testing.T) {
 	// Test pagination
 	query = NewRecordQuery()
 	query = query.SetLimit(2).SetOffset(0)
+	if err := query.Validate(); err != nil {
+		t.Fatal("unexpected validation error:", err)
+	}
 	audits, err = store.AuditList(query)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
