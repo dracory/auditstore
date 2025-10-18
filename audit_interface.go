@@ -5,8 +5,8 @@ import (
 	"github.com/dromara/carbon/v2"
 )
 
-// AuditInterface represents an audit record in the system
-type AuditInterface interface {
+// RecordInterface represents an audit record in the system
+type RecordInterface interface {
 	dataobject.DataObjectInterface
 
 	// ID returns the unique identifier of the audit record

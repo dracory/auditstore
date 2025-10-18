@@ -45,7 +45,7 @@ func TestStoreAuditCreate(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	audit := NewAudit()
+	audit := NewRecord()
 	audit.SetObjectType("user")
 	audit.SetObjectID("user_123")
 	audit.SetAuthorID("admin_1")
@@ -76,7 +76,7 @@ func TestStoreAuditGet(t *testing.T) {
 	}
 
 	// Create test audit
-	audit := NewAudit()
+	audit := NewRecord()
 	audit.SetObjectType("user")
 	audit.SetObjectID("user_123")
 	audit.SetAuthorID("admin_1")
@@ -113,7 +113,7 @@ func TestStoreAuditList(t *testing.T) {
 
 	// Create test audits
 	for i := 0; i < 5; i++ {
-		audit := NewAudit()
+		audit := NewRecord()
 		audit.SetObjectType("user")
 		audit.SetObjectID("user_123")
 		audit.SetAuthorID("admin_1")
@@ -168,7 +168,7 @@ func TestStoreAuditCount(t *testing.T) {
 
 	// Create test audits
 	for i := 0; i < 3; i++ {
-		audit := NewAudit()
+		audit := NewRecord()
 		audit.SetObjectType("user")
 		audit.SetObjectID("user_123")
 		audit.SetAuthorID("admin_1")
@@ -207,7 +207,7 @@ func TestStoreAuditDelete(t *testing.T) {
 	}
 
 	// Create test audit
-	audit := NewAudit()
+	audit := NewRecord()
 	audit.SetObjectType("user")
 	audit.SetObjectID("user_123")
 	audit.SetAuthorID("admin_1")

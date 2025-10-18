@@ -140,7 +140,7 @@ func (st *storeImplementation) EnableDebugMode(debug bool) {
 }
 
 // AuditGet retrieves an audit record by its ID
-func (st *storeImplementation) AuditGet(id string) (AuditInterface, error) {
+func (st *storeImplementation) AuditGet(id string) (RecordInterface, error) {
 	if st.db == nil {
 		return nil, errors.New("database is not initialized")
 	}
@@ -172,13 +172,13 @@ func (st *storeImplementation) AuditGet(id string) (AuditInterface, error) {
 		return nil, nil
 	}
 
-	// Convert the first result to an Audit object
-	audit := NewAuditFromExistingData(modelMaps[0])
-	return audit, nil
+	// Convert the first result to a Record object
+	record := NewRecordFromExistingData(modelMaps[0])
+	return record, nil
 }
 
 // AuditList retrieves a list of audit records based on a query
-func (st *storeImplementation) AuditList(query AuditQueryInterface) ([]AuditInterface, error) {
+func (st *storeImplementation) AuditList(query AuditQueryInterface) ([]RecordInterface, error) {
 	// Build the select dataset
 	ds, _, err := query.ToSelectDataset(st.dbDriverName, st.auditTableName)
 	if err != nil {
@@ -201,14 +201,14 @@ func (st *storeImplementation) AuditList(query AuditQueryInterface) ([]AuditInte
 		return nil, err
 	}
 
-	// Convert the maps to AuditInterface objects
-	audits := make([]AuditInterface, 0, len(modelMaps))
+	// Convert the maps to RecordInterface objects
+	records := make([]RecordInterface, 0, len(modelMaps))
 	for _, modelMap := range modelMaps {
-		audit := NewAuditFromExistingData(modelMap)
-		audits = append(audits, audit)
+		record := NewRecordFromExistingData(modelMap)
+		records = append(records, record)
 	}
 
-	return audits, nil
+	return records, nil
 }
 
 // AuditCount retrieves the count of audit records based on a query
@@ -270,20 +270,20 @@ func (st *storeImplementation) DebugEnable(debug bool) {
 }
 
 // AuditCreate creates a new audit record
-func (s *storeImplementation) AuditCreate(audit AuditInterface) error {
+func (s *storeImplementation) AuditCreate(record RecordInterface) error {
 	if s.db == nil {
 		return errors.New("database is not initialized")
 	}
 
-	if audit.ID() == "" {
+	if record.ID() == "" {
 		time.Sleep(1 * time.Millisecond)
-		audit.SetID(uid.MicroUid())
+		record.SetID(uid.MicroUid())
 	}
 
-	audit.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	record.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
-	// Get the data from the audit object
-	data := audit.Data()
+	// Get the data from the record object
+	data := record.Data()
 
 	// Build the SQL query
 	sqlStr, sqlParams, err := goqu.Dialect(s.dbDriverName).
@@ -307,7 +307,7 @@ func (s *storeImplementation) AuditCreate(audit AuditInterface) error {
 		return err
 	}
 
-	audit.MarkAsNotDirty()
+	record.MarkAsNotDirty()
 
 	return nil
 }

@@ -10,13 +10,13 @@ type StoreInterface interface {
 	DebugEnable(debug bool)
 
 	// AuditCreate creates a new audit record
-	AuditCreate(audit AuditInterface) error
+	AuditCreate(audit RecordInterface) error
 
 	// AuditGet retrieves an audit record by its ID
-	AuditGet(id string) (AuditInterface, error)
+	AuditGet(id string) (RecordInterface, error)
 
 	// AuditList retrieves a list of audit records based on a query
-	AuditList(query AuditQueryInterface) ([]AuditInterface, error)
+	AuditList(query AuditQueryInterface) ([]RecordInterface, error)
 
 	// AuditCount retrieves the count of audit records based on a query
 	AuditCount(query AuditQueryInterface) (int64, error)
