@@ -7,83 +7,83 @@ import (
 	"github.com/doug-martin/goqu/v9"
 )
 
-type RecordQuery struct {
-	limit         int
-	limitSet      bool
-	offset        int
-	offsetSet     bool
-	orderBy       string
-	orderAsc      bool
-	orderBySet    bool
-	objectType    string
-	objectTypeSet bool
-	objectID      string
-	objectIDSet   bool
-	authorID      string
-	authorIDSet   bool
-	createdAfter  time.Time
-	createdAfterSet bool
-	createdBefore time.Time
+type recordQueryImplementation struct {
+	limit            int
+	limitSet         bool
+	offset           int
+	offsetSet        bool
+	orderBy          string
+	orderAsc         bool
+	orderBySet       bool
+	objectType       string
+	objectTypeSet    bool
+	objectID         string
+	objectIDSet      bool
+	authorID         string
+	authorIDSet      bool
+	createdAfter     time.Time
+	createdAfterSet  bool
+	createdBefore    time.Time
 	createdBeforeSet bool
 }
 
 // NewRecordQuery creates a new RecordQuery instance
 func NewRecordQuery() RecordQueryInterface {
-	return &RecordQuery{
+	return &recordQueryImplementation{
 		orderAsc: true, // Default to ascending order
 	}
 }
 
-func (q *RecordQuery) SetLimit(limit int) RecordQueryInterface {
+func (q *recordQueryImplementation) SetLimit(limit int) RecordQueryInterface {
 	q.limit = limit
 	q.limitSet = true
 	return q
 }
 
-func (q *RecordQuery) SetOffset(offset int) RecordQueryInterface {
+func (q *recordQueryImplementation) SetOffset(offset int) RecordQueryInterface {
 	q.offset = offset
 	q.offsetSet = true
 	return q
 }
 
-func (q *RecordQuery) SetOrderBy(field string, ascending bool) RecordQueryInterface {
+func (q *recordQueryImplementation) SetOrderBy(field string, ascending bool) RecordQueryInterface {
 	q.orderBy = field
 	q.orderAsc = ascending
 	q.orderBySet = true
 	return q
 }
 
-func (q *RecordQuery) SetObjectType(objectType string) RecordQueryInterface {
+func (q *recordQueryImplementation) SetObjectType(objectType string) RecordQueryInterface {
 	q.objectType = objectType
 	q.objectTypeSet = true
 	return q
 }
 
-func (q *RecordQuery) SetObjectID(objectID string) RecordQueryInterface {
+func (q *recordQueryImplementation) SetObjectID(objectID string) RecordQueryInterface {
 	q.objectID = objectID
 	q.objectIDSet = true
 	return q
 }
 
-func (q *RecordQuery) SetAuthorID(authorID string) RecordQueryInterface {
+func (q *recordQueryImplementation) SetAuthorID(authorID string) RecordQueryInterface {
 	q.authorID = authorID
 	q.authorIDSet = true
 	return q
 }
 
-func (q *RecordQuery) SetCreatedAfter(t time.Time) RecordQueryInterface {
+func (q *recordQueryImplementation) SetCreatedAfter(t time.Time) RecordQueryInterface {
 	q.createdAfter = t
 	q.createdAfterSet = true
 	return q
 }
 
-func (q *RecordQuery) SetCreatedBefore(t time.Time) RecordQueryInterface {
+func (q *recordQueryImplementation) SetCreatedBefore(t time.Time) RecordQueryInterface {
 	q.createdBefore = t
 	q.createdBeforeSet = true
 	return q
 }
 
-func (q *RecordQuery) Validate() error {
+func (q *recordQueryImplementation) Validate() error {
 	if q.limitSet && q.limit < 0 {
 		return errors.New("limit cannot be negative")
 	}
@@ -134,7 +134,7 @@ func (q *RecordQuery) Validate() error {
 }
 
 // ToSelectDataset builds a goqu.SelectDataset with the current query parameters
-func (q *RecordQuery) ToSelectDataset(driver string, table string) (selectDataset *goqu.SelectDataset, columns []any, err error) {
+func (q *recordQueryImplementation) ToSelectDataset(driver string, table string) (selectDataset *goqu.SelectDataset, columns []any, err error) {
 	if err := q.Validate(); err != nil {
 		return nil, nil, err
 	}
