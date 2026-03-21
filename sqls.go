@@ -45,5 +45,9 @@ func (st *storeImplementation) sqlAuditTableCreate() string {
 	// sql.Index(COLUMN_OBJECT_ID)
 	// sql.Index(COLUMN_CREATED_AT)
 
-	return sql.CreateIfNotExists()
+	query, err := sql.CreateIfNotExists()
+	if err != nil {
+		return ""
+	}
+	return query
 }
