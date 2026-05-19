@@ -62,7 +62,7 @@ func NewStore(options NewStoreOptions) (StoreInterface, error) {
 	}
 
 	if store.automigrateEnabled {
-		err := store.MigrateUp()
+		err := store.MigrateUp(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -73,11 +73,11 @@ func NewStore(options NewStoreOptions) (StoreInterface, error) {
 
 // AutoMigrate creates the audit table if it doesn't exist (deprecated - use MigrateUp)
 func (st *storeImplementation) AutoMigrate() error {
-	return st.MigrateUp()
+	return st.MigrateUp(context.Background())
 }
 
 // MigrateUp creates the audit table
-func (st *storeImplementation) MigrateUp(tx ...*sql.Tx) error {
+func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) error {
 	var txToUse *sql.Tx
 	if len(tx) > 0 {
 		txToUse = tx[0]
@@ -95,9 +95,9 @@ func (st *storeImplementation) MigrateUp(tx ...*sql.Tx) error {
 
 	var err error
 	if txToUse != nil {
-		_, err = txToUse.Exec(sqlStr)
+		_, err = txToUse.ExecContext(ctx, sqlStr)
 	} else {
-		_, err = st.db.Exec(sqlStr)
+		_, err = st.db.ExecContext(ctx, sqlStr)
 	}
 
 	if err != nil {
@@ -111,7 +111,7 @@ func (st *storeImplementation) MigrateUp(tx ...*sql.Tx) error {
 }
 
 // MigrateDown drops the audit table
-func (st *storeImplementation) MigrateDown(tx ...*sql.Tx) error {
+func (st *storeImplementation) MigrateDown(ctx context.Context, tx ...*sql.Tx) error {
 	var txToUse *sql.Tx
 	if len(tx) > 0 {
 		txToUse = tx[0]
@@ -129,9 +129,9 @@ func (st *storeImplementation) MigrateDown(tx ...*sql.Tx) error {
 
 	var err error
 	if txToUse != nil {
-		_, err = txToUse.Exec(sqlStr)
+		_, err = txToUse.ExecContext(ctx, sqlStr)
 	} else {
-		_, err = st.db.Exec(sqlStr)
+		_, err = st.db.ExecContext(ctx, sqlStr)
 	}
 
 	if err != nil {

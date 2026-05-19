@@ -1,6 +1,9 @@
 package auditstore
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
 // StoreInterface defines the interface for audit store operations
 type StoreInterface interface {
@@ -10,9 +13,9 @@ type StoreInterface interface {
 	SetAuditTableName(tableName string)
 
 	// MigrateDown drops the audit table
-	MigrateDown(tx ...*sql.Tx) error
+	MigrateDown(ctx context.Context, tx ...*sql.Tx) error
 	// MigrateUp creates the audit table
-	MigrateUp(tx ...*sql.Tx) error
+	MigrateUp(ctx context.Context, tx ...*sql.Tx) error
 
 	// EnableDebugMode enables or disables debug mode
 	EnableDebugMode(debug bool)
