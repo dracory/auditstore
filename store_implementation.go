@@ -62,7 +62,7 @@ func NewStore(options NewStoreOptions) (StoreInterface, error) {
 	}
 
 	if store.automigrateEnabled {
-		err := store.AutoMigrate()
+		err := store.MigrateUp()
 		if err != nil {
 			return nil, err
 		}
@@ -71,8 +71,18 @@ func NewStore(options NewStoreOptions) (StoreInterface, error) {
 	return store, nil
 }
 
-// AutoMigrate creates the audit table if it doesn't exist
+// AutoMigrate creates the audit table if it doesn't exist (deprecated - use MigrateUp)
 func (st *storeImplementation) AutoMigrate() error {
+	return st.MigrateUp()
+}
+
+// MigrateUp creates the audit table
+func (st *storeImplementation) MigrateUp(tx ...*sql.Tx) error {
+	var txToUse *sql.Tx
+	if len(tx) > 0 {
+		txToUse = tx[0]
+	}
+
 	sqlStr := st.sqlAuditTableCreate()
 
 	if sqlStr == "" {
@@ -83,7 +93,47 @@ func (st *storeImplementation) AutoMigrate() error {
 		st.logger.Info("Running migration", "sql", sqlStr)
 	}
 
-	_, err := st.db.Exec(sqlStr)
+	var err error
+	if txToUse != nil {
+		_, err = txToUse.Exec(sqlStr)
+	} else {
+		_, err = st.db.Exec(sqlStr)
+	}
+
+	if err != nil {
+		if st.debugEnabled {
+			st.logger.Error("Migration failed", "error", err)
+		}
+		return err
+	}
+
+	return nil
+}
+
+// MigrateDown drops the audit table
+func (st *storeImplementation) MigrateDown(tx ...*sql.Tx) error {
+	var txToUse *sql.Tx
+	if len(tx) > 0 {
+		txToUse = tx[0]
+	}
+
+	sqlStr := st.sqlAuditTableDrop()
+
+	if sqlStr == "" {
+		return errors.New("audit table drop SQL is empty")
+	}
+
+	if st.debugEnabled {
+		st.logger.Info("Running migration", "sql", sqlStr)
+	}
+
+	var err error
+	if txToUse != nil {
+		_, err = txToUse.Exec(sqlStr)
+	} else {
+		_, err = st.db.Exec(sqlStr)
+	}
+
 	if err != nil {
 		if st.debugEnabled {
 			st.logger.Error("Migration failed", "error", err)
@@ -137,6 +187,16 @@ func (st *storeImplementation) EnableDebugMode(debug bool) {
 	} else {
 		st.logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 	}
+}
+
+// GetAuditTableName returns the audit table name
+func (st *storeImplementation) GetAuditTableName() string {
+	return st.auditTableName
+}
+
+// SetAuditTableName sets the audit table name
+func (st *storeImplementation) SetAuditTableName(tableName string) {
+	st.auditTableName = tableName
 }
 
 // AuditGet retrieves an audit record by its ID

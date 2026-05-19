@@ -51,3 +51,14 @@ func (st *storeImplementation) sqlAuditTableCreate() string {
 	}
 	return query
 }
+
+// sqlAuditTableDrop returns a SQL string for dropping the audit table
+func (st *storeImplementation) sqlAuditTableDrop() string {
+	query, err := sb.NewBuilder(st.dbDriverName).
+		Table(st.auditTableName).
+		Drop()
+	if err != nil {
+		return ""
+	}
+	return query
+}
