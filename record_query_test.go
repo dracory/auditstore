@@ -62,10 +62,7 @@ func TestRecordQueryValidate(t *testing.T) {
 }
 
 func TestRecordQueryToQuery(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatal("unexpected error creating store:", err)
-	}
+	store := initStore(t)
 
 	// Seed a few records with different authors and object types
 	for i, author := range []string{"alice", "bob", "alice"} {

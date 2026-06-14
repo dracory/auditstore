@@ -2,14 +2,13 @@ package auditstore
 
 import (
 	"encoding/json"
-	"errors"
 	"testing"
 
 	_ "modernc.org/sqlite"
 )
 
-func initStore() (StoreInterface, error) {
-	db := initTestDB()
+func initStore(t *testing.T) StoreInterface {
+	db := initTestDB(t)
 
 	store, err := NewStore(NewStoreOptions{
 		DB:                 db,
@@ -19,21 +18,18 @@ func initStore() (StoreInterface, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		t.Fatalf("Failed to create store: %v", err)
 	}
 
 	if store == nil {
-		return nil, errors.New("unexpected nil store")
+		t.Fatal("unexpected nil store")
 	}
 
-	return store, nil
+	return store
 }
 
 func TestStoreAuditCreate(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatal("unexpected error:", err)
-	}
+	store := initStore(t)
 
 	audit := NewRecord().
 		SetObjectType("user").
@@ -49,7 +45,7 @@ func TestStoreAuditCreate(t *testing.T) {
 	audit = audit.SetValueOld(string(oldValueJSON)).
 		SetValueNew(string(newValueJSON))
 
-	err = store.AuditCreate(audit)
+	err := store.AuditCreate(audit)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -60,10 +56,7 @@ func TestStoreAuditCreate(t *testing.T) {
 }
 
 func TestStoreAuditGet(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatal("unexpected error:", err)
-	}
+	store := initStore(t)
 
 	// Create test audit
 	audit := NewRecord().
@@ -71,7 +64,7 @@ func TestStoreAuditGet(t *testing.T) {
 		SetObjectID("user_123").
 		SetAuthorID("admin_1")
 
-	err = store.AuditCreate(audit)
+	err := store.AuditCreate(audit)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -96,10 +89,7 @@ func TestStoreAuditGet(t *testing.T) {
 }
 
 func TestStoreAuditGetNotFound(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatal("unexpected error:", err)
-	}
+	store := initStore(t)
 
 	result, err := store.AuditGet("nonexistent-id")
 	if err != nil {
@@ -111,10 +101,7 @@ func TestStoreAuditGetNotFound(t *testing.T) {
 }
 
 func TestStoreAuditList(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatal("unexpected error:", err)
-	}
+	store := initStore(t)
 
 	// Create test audits
 	for i := 0; i < 5; i++ {
@@ -123,7 +110,7 @@ func TestStoreAuditList(t *testing.T) {
 			SetObjectID("user_123").
 			SetAuthorID("admin_1")
 
-		err = store.AuditCreate(audit)
+		err := store.AuditCreate(audit)
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -175,10 +162,7 @@ func TestStoreAuditList(t *testing.T) {
 }
 
 func TestStoreAuditCount(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatal("unexpected error:", err)
-	}
+	store := initStore(t)
 
 	// Create test audits
 	for i := 0; i < 3; i++ {
@@ -187,7 +171,7 @@ func TestStoreAuditCount(t *testing.T) {
 			SetObjectID("user_123").
 			SetAuthorID("admin_1")
 
-		err = store.AuditCreate(audit)
+		err := store.AuditCreate(audit)
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -215,10 +199,7 @@ func TestStoreAuditCount(t *testing.T) {
 }
 
 func TestStoreAuditDelete(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatal("unexpected error:", err)
-	}
+	store := initStore(t)
 
 	// Create test audit
 	audit := NewRecord().
@@ -226,7 +207,7 @@ func TestStoreAuditDelete(t *testing.T) {
 		SetObjectID("user_123").
 		SetAuthorID("admin_1")
 
-	err = store.AuditCreate(audit)
+	err := store.AuditCreate(audit)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
