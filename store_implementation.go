@@ -75,9 +75,16 @@ func (st *storeImplementation) AutoMigrate() error {
 // Note: the neat schema builder does not expose a transaction handle, so the tx
 // parameter is accepted for interface compatibility but cannot be forwarded.
 func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) error {
+	if st.db.Schema().HasTable(st.auditTableName) {
+		if st.debugEnabled {
+			st.logger.Info("MigrateUp: table already exists", "table", st.auditTableName)
+		}
+		return nil
+	}
+
 	err := st.db.Schema().Create(st.auditTableName, func(table contractsschema.Blueprint) {
-		table.String("id", 21)
-		table.Primary("id")
+		table.String(COLUMN_ID, 21)
+		table.Primary(COLUMN_ID)
 		table.String(COLUMN_OBJECT_TYPE, 100)
 		table.String(COLUMN_OBJECT_ID, 40)
 		table.Text(COLUMN_VALUE_OLD)
@@ -100,6 +107,13 @@ func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) err
 // Note: the neat schema builder does not expose a transaction handle, so the tx
 // parameter is accepted for interface compatibility but cannot be forwarded.
 func (st *storeImplementation) MigrateDown(ctx context.Context, tx ...*sql.Tx) error {
+	if !st.db.Schema().HasTable(st.auditTableName) {
+		if st.debugEnabled {
+			st.logger.Info("MigrateDown: table does not exist", "table", st.auditTableName)
+		}
+		return nil
+	}
+
 	err := st.db.Schema().Drop(st.auditTableName)
 	if err != nil {
 		if st.debugEnabled {
