@@ -1,10 +1,9 @@
 module github.com/dracory/auditstore
 
-go 1.26.1
+go 1.26.3
 
 require (
-	github.com/dracory/neat v0.10.1-0.20260613151659-188777223344
-	github.com/dracory/uid v1.9.0
+	github.com/dracory/neat v0.11.0
 	github.com/dromara/carbon/v2 v2.6.16
 	modernc.org/sqlite v1.51.0
 )

@@ -1,15 +1,14 @@
 package auditstore
 
 import (
-	"time"
-
-	"github.com/dracory/uid"
+	"github.com/dracory/neat/database/orm"
+	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 )
 
 // recordImplementation is the private implementation of RecordInterface
 type recordImplementation struct {
-	IDValue string `json:"id" db:"id"`
+	orm.ShortID
 
 	ObjectTypeField string `db:"object_type"`
 	ObjectIDField   string `db:"object_id"`
@@ -17,44 +16,39 @@ type recordImplementation struct {
 	ValueNewField   string `db:"value_new"`
 	AuthorIDField   string `db:"author_id"`
 
-	CreatedAtValue time.Time `json:"created_at" db:"created_at"`
-	UpdatedAtValue time.Time `json:"updated_at" db:"updated_at"`
-}
-
-// TableName returns the table name for the record
-func (r *recordImplementation) TableName() string {
-	return "audit_log" // Default, can be overridden by store
+	CreatedAtField orm.CreatedAt
 }
 
 // NewRecord creates a new audit record with default values
 func NewRecord() RecordInterface {
 	record := &recordImplementation{}
-	record.SetID(uid.MicroUid())
-	record.SetCreatedAt(carbon.Now().ToDateTimeString())
+	record.SetID(neatuid.GenerateShortID())
+	record.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	return record
 }
 
+// NewRecordFromExistingData constructs a record from a string map (e.g. query results)
 func NewRecordFromExistingData(data map[string]string) RecordInterface {
 	record := &recordImplementation{
-		IDValue:         data[COLUMN_ID],
 		ObjectTypeField: data[COLUMN_OBJECT_TYPE],
 		ObjectIDField:   data[COLUMN_OBJECT_ID],
 		ValueOldField:   data[COLUMN_VALUE_OLD],
 		ValueNewField:   data[COLUMN_VALUE_NEW],
 		AuthorIDField:   data[COLUMN_AUTHOR_ID],
 	}
+	record.SetID(data[COLUMN_ID])
 	record.SetCreatedAt(data[COLUMN_CREATED_AT])
 	return record
 }
 
 // ID returns the unique identifier of the audit record
 func (r *recordImplementation) ID() string {
-	return r.IDValue
+	return r.ShortID.ID
 }
 
 // SetID sets the unique identifier of the audit record
 func (r *recordImplementation) SetID(id string) {
-	r.IDValue = id
+	r.ShortID.ID = id
 }
 
 // ObjectType returns the type of the audited object
@@ -114,10 +108,10 @@ func (r *recordImplementation) SetAuthorID(authorID string) RecordInterface {
 
 // CreatedAt returns the timestamp when the audit record was created
 func (r *recordImplementation) CreatedAt() string {
-	if r.CreatedAtValue.IsZero() {
+	if r.CreatedAtField.CreatedAt.IsZero() {
 		return ""
 	}
-	return carbon.CreateFromStdTime(r.CreatedAtValue).ToDateTimeString()
+	return carbon.CreateFromStdTime(r.CreatedAtField.CreatedAt).ToDateTimeString()
 }
 
 // SetCreatedAt sets the timestamp when the audit record was created
@@ -125,11 +119,11 @@ func (r *recordImplementation) SetCreatedAt(createdAt string) RecordInterface {
 	if createdAt == "" {
 		return r
 	}
-	r.CreatedAtValue = carbon.Parse(createdAt).StdTime()
+	r.CreatedAtField.CreatedAt = carbon.Parse(createdAt).StdTime()
 	return r
 }
 
 // CreatedAtCarbon returns the created at timestamp as a Carbon instance
 func (r *recordImplementation) CreatedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(r.CreatedAtValue)
+	return carbon.CreateFromStdTime(r.CreatedAtField.CreatedAt)
 }

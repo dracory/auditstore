@@ -148,25 +148,26 @@ func (q *recordQueryImplementation) ToQuery(db *neat.Database) (orm.Query, error
 
 	query := db.Query()
 
-	// Apply filters
+	// Apply filters using raw SQL fragments so operators are included in the
+	// query string (neat's Where treats the first arg as a column when there is
+	// exactly one additional arg and no operator in the string).
 	if q.objectType != "" {
-		query = query.Where(COLUMN_OBJECT_TYPE, q.objectType)
+		query = query.Where(COLUMN_OBJECT_TYPE+" = ?", q.objectType)
 	}
 
 	if q.objectID != "" {
-		query = query.Where(COLUMN_OBJECT_ID, q.objectID)
+		query = query.Where(COLUMN_OBJECT_ID+" = ?", q.objectID)
 	}
 
 	if q.authorID != "" {
-		query = query.Where(COLUMN_AUTHOR_ID, q.authorID)
+		query = query.Where(COLUMN_AUTHOR_ID+" = ?", q.authorID)
 	}
 
-	// Apply date range filters
 	if !q.createdAfter.IsZero() {
-		query = query.Where(COLUMN_CREATED_AT, ">=", q.createdAfter)
+		query = query.Where(COLUMN_CREATED_AT+" >= ?", q.createdAfter)
 	}
 	if !q.createdBefore.IsZero() {
-		query = query.Where(COLUMN_CREATED_AT, "<=", q.createdBefore)
+		query = query.Where(COLUMN_CREATED_AT+" <= ?", q.createdBefore)
 	}
 
 	// Apply ordering
@@ -177,11 +178,12 @@ func (q *recordQueryImplementation) ToQuery(db *neat.Database) (orm.Query, error
 	query = query.OrderBy(orderBy, direction)
 
 	// Apply pagination
-	if q.limit > 0 {
+	if q.limitSet && q.limit > 0 {
 		query = query.Limit(q.limit)
 	}
 
-	if q.offset > 0 {
+	// Apply offset whenever it was explicitly set, including zero
+	if q.offsetSet {
 		query = query.Offset(q.offset)
 	}
 

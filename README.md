@@ -38,7 +38,7 @@ Auditstore helps your application answer the question *"what changed and when?"*
 ```bash
 go get github.com/dracory/auditstore
 ```
-Ensure your project uses Go `1.24.5` or newer (specified in `go.mod`).
+Ensure your project uses Go `1.26.3` or newer (specified in `go.mod`).
 
 ## Quick Start
 ```go
@@ -97,16 +97,16 @@ func main() {
 ### StoreInterface (`store_interface.go`)
 - **EnableDebugMode(debug bool)**: Toggle structured logging; `DebugEnable` aliases this for backward compatibility.
 - **AuditCreate(record RecordInterface) error**: Inserts a new audit row, auto-populating `id` and `created_at` when missing.
-- **AuditGet(id string) (RecordInterface, error)**: Retrieves a single record or `nil` if not found.
+- **AuditGet(id string) (RecordInterface, error)**: Retrieves a single record or `nil, nil` if not found.
 - **AuditList(query RecordQueryInterface) ([]RecordInterface, error)**: Returns all records matching the query.
 - **AuditCount(query RecordQueryInterface) (int64, error)**: Counts rows for the given query.
 - **AuditDelete(id string) error**: Removes the matching row.
-- **AutoMigrate() error**: Creates the audit table using `sqlAuditTableCreate()` when absent.
+- **AutoMigrate() error**: Creates the audit table if absent (deprecated alias for `MigrateUp`).
 
 ### NewStoreOptions (`store_implementation.go`)
-- **DB**: Required `*sql.DB` connection. Its driver name determines SQL dialect via `database.DatabaseType`.
+- **DB**: Required `*sql.DB` connection. The driver name is auto-detected to select the correct SQL dialect.
 - **AuditTableName**: Required table name (e.g., `audit_log`).
-- **AutomigrateEnabled**: Auto-run `AutoMigrate()` during construction.
+- **AutomigrateEnabled**: Auto-run `MigrateUp()` during construction.
 - **DebugEnabled**: Enable structured debug logging immediately.
 
 ### RecordInterface (`record_interface.go`)
@@ -119,7 +119,7 @@ func main() {
 - **CreatedAtCarbon()**: Returns `*carbon.Carbon` for time arithmetic.
 
 ## Querying Records
-`RecordQueryInterface` (`record_query_interface.go`) exposes fluent setters. The concrete implementation in `record_query.go` validates inputs and converts them into a `goqu.SelectDataset` using `ToSelectDataset(driver, table)`.
+`RecordQueryInterface` (`record_query_interface.go`) exposes fluent setters. The concrete implementation in `record_query_implementation.go` validates inputs and builds a `neat.Query` via `ToQuery(db)`.
 
 ```go
 query := auditstore.NewRecordQuery().
@@ -150,16 +150,19 @@ Column names are defined in `constants.go`:
 - **`COLUMN_AUTHOR_ID`** (`author_id`)
 - **`COLUMN_CREATED_AT`** (`created_at`)
 
-`sqls.go` uses `github.com/dracory/sb` to declare the table with appropriate column lengths and types. Indexes can be added by extending the builder section that currently contains commented placeholders.
+Audit records are immutable — once written they are never updated. The table schema is declared in `MigrateUp` using the `neat` schema builder (`github.com/dracory/neat`), which generates dialect-appropriate DDL for SQLite, PostgreSQL, MySQL, and SQL Server.
 
 ## Debugging & Logging
 - **Enable debug mode**: `store.EnableDebugMode(true)` switches the logger to debug level using `slog.NewTextHandler` with `LevelDebug`.
 - **SQL output**: When debug is on, SQL statements and parameters are printed before execution across CRUD methods.
 
 ## Testing
-`store_test.go` contains integration-style tests using `modernc.org/sqlite` in-memory databases:
+`store_test.go` and `record_query_test.go` contain integration-style tests using `modernc.org/sqlite` in-memory databases:
 - **`TestStoreAuditCreate`**: Ensures IDs are assigned and records persist.
-- **`TestStoreAuditGet`**, **`TestStoreAuditList`**, **`TestStoreAuditCount`**, **`TestStoreAuditDelete`** cover the primary Store operations.
+- **`TestStoreAuditGet`**, **`TestStoreAuditGetNotFound`**: Confirm retrieval and correct nil return on missing records.
+- **`TestStoreAuditList`**, **`TestStoreAuditCount`**, **`TestStoreAuditDelete`**: Cover the primary Store operations.
+- **`TestRecordQueryToQuery`**: Exercises filtering, pagination, date ranges, and ordering end-to-end.
+
 Run the suite with:
 ```bash
 go test ./...
@@ -167,15 +170,12 @@ go test ./...
 
 ## Development Notes
 - Ensure the target database driver is registered with `database/sql` (e.g., import `_ "modernc.org/sqlite"`).
-- `AuditCreate` uses `database.Execute` from `github.com/dracory/database`, which expects context-aware execution; the package wraps `context.Background()` for convenience.
-- Timestamps default to UTC via `carbon.Now(carbon.UTC)` inside `AuditCreate`, guaranteeing consistent storage across drivers.
+- `AuditCreate` accepts any `RecordInterface` implementation — no type assertion is performed.
+- Timestamps are stored as `time.Time` (UTC) so the ORM handles dialect-specific serialisation correctly.
 
 ## Dependencies
 Auditstore relies on:
-- **`github.com/doug-martin/goqu/v9`** for SQL construction.
-- **`github.com/dracory/database`** for database helpers (`SelectToMapString`, `Execute`).
-- **`github.com/dracory/dataobject`** for the record data container.
+- **`github.com/dracory/neat`** for ORM operations and schema management.
 - **`github.com/dracory/uid`** for unique ID generation.
-- **`github.com/dracory/sb`** for schema building.
 - **`github.com/dromara/carbon/v2`** for time handling.
 - **`modernc.org/sqlite`** in tests as an embedded driver; replace or supplement with your chosen driver in production.

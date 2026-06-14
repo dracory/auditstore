@@ -9,7 +9,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func initDB(_ string) *sql.DB {
+func initDB() *sql.DB {
 	db, err := sql.Open("sqlite", ":memory:?parseTime=true")
 	if err != nil {
 		panic(err)
@@ -18,8 +18,8 @@ func initDB(_ string) *sql.DB {
 	return db
 }
 
-func initStore(filepath string) (StoreInterface, error) {
-	db := initDB(filepath)
+func initStore() (StoreInterface, error) {
+	db := initDB()
 
 	store, err := NewStore(NewStoreOptions{
 		DB:                 db,
@@ -40,7 +40,7 @@ func initStore(filepath string) (StoreInterface, error) {
 }
 
 func TestStoreAuditCreate(t *testing.T) {
-	store, err := initStore(":memory:")
+	store, err := initStore()
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -70,7 +70,7 @@ func TestStoreAuditCreate(t *testing.T) {
 }
 
 func TestStoreAuditGet(t *testing.T) {
-	store, err := initStore(":memory:")
+	store, err := initStore()
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -105,8 +105,23 @@ func TestStoreAuditGet(t *testing.T) {
 	}
 }
 
+func TestStoreAuditGetNotFound(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	result, err := store.AuditGet("nonexistent-id")
+	if err != nil {
+		t.Fatal("expected nil error for missing record, got:", err)
+	}
+	if result != nil {
+		t.Fatal("expected nil result for missing record")
+	}
+}
+
 func TestStoreAuditList(t *testing.T) {
-	store, err := initStore(":memory:")
+	store, err := initStore()
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -170,7 +185,7 @@ func TestStoreAuditList(t *testing.T) {
 }
 
 func TestStoreAuditCount(t *testing.T) {
-	store, err := initStore(":memory:")
+	store, err := initStore()
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -210,7 +225,7 @@ func TestStoreAuditCount(t *testing.T) {
 }
 
 func TestStoreAuditDelete(t *testing.T) {
-	store, err := initStore(":memory:")
+	store, err := initStore()
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}

@@ -9,6 +9,8 @@ import (
 
 	"github.com/dracory/neat"
 	contractsschema "github.com/dracory/neat/contracts/database/schema"
+	neatuid "github.com/dracory/neat/support/uid"
+	"github.com/dromara/carbon/v2"
 )
 
 // storeImplementation implements StoreInterface for audit operations
@@ -69,9 +71,10 @@ func (st *storeImplementation) AutoMigrate() error {
 	return st.MigrateUp(context.Background())
 }
 
-// MigrateUp creates the audit table
+// MigrateUp creates the audit table.
+// Note: the neat schema builder does not expose a transaction handle, so the tx
+// parameter is accepted for interface compatibility but cannot be forwarded.
 func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) error {
-	// Use neat's schema builder
 	err := st.db.Schema().Create(st.auditTableName, func(table contractsschema.Blueprint) {
 		table.String("id", 21)
 		table.Primary("id")
@@ -80,12 +83,12 @@ func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) err
 		table.Text(COLUMN_VALUE_OLD)
 		table.Text(COLUMN_VALUE_NEW)
 		table.String(COLUMN_AUTHOR_ID, 40)
-		table.Timestamps()
+		table.DateTime(COLUMN_CREATED_AT)
 	})
 
 	if err != nil {
 		if st.debugEnabled {
-			st.logger.Error("Migration failed", "error", err)
+			st.logger.Error("MigrateUp failed", "error", err)
 		}
 		return err
 	}
@@ -93,12 +96,14 @@ func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) err
 	return nil
 }
 
-// MigrateDown drops the audit table
+// MigrateDown drops the audit table.
+// Note: the neat schema builder does not expose a transaction handle, so the tx
+// parameter is accepted for interface compatibility but cannot be forwarded.
 func (st *storeImplementation) MigrateDown(ctx context.Context, tx ...*sql.Tx) error {
 	err := st.db.Schema().Drop(st.auditTableName)
 	if err != nil {
 		if st.debugEnabled {
-			st.logger.Error("Migration failed", "error", err)
+			st.logger.Error("MigrateDown failed", "error", err)
 		}
 		return err
 	}
@@ -136,10 +141,13 @@ func (st *storeImplementation) AuditGet(id string) (RecordInterface, error) {
 	record := &recordImplementation{}
 	err := st.db.Query().Table(st.auditTableName).Where("id", id).First(record)
 	if err != nil {
+		if err.Error() == "no rows found" {
+			return nil, nil
+		}
 		if st.debugEnabled {
 			st.logger.Debug("AuditGet error", "error", err)
 		}
-		return nil, nil
+		return nil, err
 	}
 
 	return record, nil
@@ -202,14 +210,30 @@ func (st *storeImplementation) DebugEnable(debug bool) {
 	st.EnableDebugMode(debug)
 }
 
-// AuditCreate creates a new audit record
+// AuditCreate creates a new audit record.
+// Accepts any RecordInterface and builds the insert map from the interface's
+// getters, so custom implementations are supported without type assertions.
 func (st *storeImplementation) AuditCreate(record RecordInterface) error {
-	impl, ok := record.(*recordImplementation)
-	if !ok {
-		return errors.New("unsupported record implementation")
+	if record.ID() == "" {
+		record.SetID(neatuid.GenerateShortID())
 	}
 
-	err := st.db.Query().Table(st.auditTableName).Create(impl)
+	if record.CreatedAt() == "" {
+		record.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	}
+
+	// Pass time.Time so the ORM handles dialect-specific timestamp serialisation.
+	row := map[string]any{
+		COLUMN_ID:          record.ID(),
+		COLUMN_OBJECT_TYPE: record.ObjectType(),
+		COLUMN_OBJECT_ID:   record.ObjectID(),
+		COLUMN_VALUE_OLD:   record.ValueOld(),
+		COLUMN_VALUE_NEW:   record.ValueNew(),
+		COLUMN_AUTHOR_ID:   record.AuthorID(),
+		COLUMN_CREATED_AT:  record.CreatedAtCarbon().StdTime(),
+	}
+
+	err := st.db.Query().Table(st.auditTableName).Create(row)
 	if err != nil {
 		if st.debugEnabled {
 			st.logger.Debug("AuditCreate error", "error", err)
