@@ -4,7 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/doug-martin/goqu/v9"
+	"github.com/dracory/neat"
+	"github.com/dracory/neat/contracts/database/orm"
 )
 
 type recordQueryImplementation struct {
@@ -133,63 +134,58 @@ func (q *recordQueryImplementation) Validate() error {
 	return nil
 }
 
-// ToSelectDataset builds a goqu.SelectDataset with the current query parameters
-func (q *recordQueryImplementation) ToSelectDataset(driver string, table string) (selectDataset *goqu.SelectDataset, columns []any, err error) {
+// ToQuery builds a orm.Query with the current query parameters
+func (q *recordQueryImplementation) ToQuery(db *neat.Database) (orm.Query, error) {
 	if err := q.Validate(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Set default order by if not set
-	if q.orderBy == "" {
-		q.orderBy = COLUMN_CREATED_AT
+	orderBy := q.orderBy
+	if orderBy == "" {
+		orderBy = COLUMN_CREATED_AT
 	}
 
-	// Initialize the query
-	selectDataset = goqu.Dialect(driver).From(table)
+	query := db.Query()
 
-	// Apply filters
+	// Apply filters using raw SQL fragments so operators are included in the
+	// query string (neat's Where treats the first arg as a column when there is
+	// exactly one additional arg and no operator in the string).
 	if q.objectType != "" {
-		selectDataset = selectDataset.Where(goqu.C(COLUMN_OBJECT_TYPE).Eq(q.objectType))
+		query = query.Where(COLUMN_OBJECT_TYPE+" = ?", q.objectType)
 	}
 
 	if q.objectID != "" {
-		selectDataset = selectDataset.Where(goqu.C(COLUMN_OBJECT_ID).Eq(q.objectID))
+		query = query.Where(COLUMN_OBJECT_ID+" = ?", q.objectID)
 	}
 
 	if q.authorID != "" {
-		selectDataset = selectDataset.Where(goqu.C(COLUMN_AUTHOR_ID).Eq(q.authorID))
+		query = query.Where(COLUMN_AUTHOR_ID+" = ?", q.authorID)
 	}
 
-	// Apply date range filters
-	if !q.createdAfter.IsZero() && !q.createdBefore.IsZero() {
-		selectDataset = selectDataset.Where(
-			goqu.C(COLUMN_CREATED_AT).Gte(q.createdAfter),
-			goqu.C(COLUMN_CREATED_AT).Lte(q.createdBefore),
-		)
-	} else if !q.createdAfter.IsZero() {
-		selectDataset = selectDataset.Where(goqu.C(COLUMN_CREATED_AT).Gte(q.createdAfter))
-	} else if !q.createdBefore.IsZero() {
-		selectDataset = selectDataset.Where(goqu.C(COLUMN_CREATED_AT).Lte(q.createdBefore))
+	if !q.createdAfter.IsZero() {
+		query = query.Where(COLUMN_CREATED_AT+" >= ?", q.createdAfter)
+	}
+	if !q.createdBefore.IsZero() {
+		query = query.Where(COLUMN_CREATED_AT+" <= ?", q.createdBefore)
 	}
 
 	// Apply ordering
-	if q.orderAsc {
-		selectDataset = selectDataset.Order(goqu.I(q.orderBy).Asc())
-	} else {
-		selectDataset = selectDataset.Order(goqu.I(q.orderBy).Desc())
+	direction := "asc"
+	if !q.orderAsc {
+		direction = "desc"
 	}
+	query = query.OrderBy(orderBy, direction)
 
 	// Apply pagination
-	if q.limit > 0 {
-		selectDataset = selectDataset.Limit(uint(q.limit))
+	if q.limitSet && q.limit > 0 {
+		query = query.Limit(q.limit)
 	}
 
-	if q.offset > 0 {
-		selectDataset = selectDataset.Offset(uint(q.offset))
+	// Apply offset whenever it was explicitly set, including zero
+	if q.offsetSet {
+		query = query.Offset(q.offset)
 	}
 
-	// Set columns to select
-	columns = []any{"*"}
-
-	return selectDataset, columns, nil
+	return query, nil
 }

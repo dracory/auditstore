@@ -4,25 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"log/slog"
 	"os"
-	"reflect"
-	"strings"
-	"time"
 
-	"github.com/doug-martin/goqu/v9"
-	"github.com/dracory/database"
-	"github.com/dracory/uid"
+	"github.com/dracory/neat"
+	contractsschema "github.com/dracory/neat/contracts/database/schema"
+	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 )
 
 // storeImplementation implements StoreInterface for audit operations
 type storeImplementation struct {
-	db                 *sql.DB
+	db                 *neat.Database
 	debugEnabled       bool
 	automigrateEnabled bool
-	dbDriverName       string
 	auditTableName     string
 	logger             *slog.Logger
 }
@@ -47,18 +42,18 @@ func NewStore(options NewStoreOptions) (StoreInterface, error) {
 		return nil, errors.New("audit table name is required")
 	}
 
+	neatDB, err := neat.NewFromSQLDB(options.DB)
+	if err != nil {
+		return nil, err
+	}
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	store := &storeImplementation{
 		logger:             logger,
-		db:                 options.DB,
+		db:                 neatDB,
 		auditTableName:     options.AuditTableName,
 		automigrateEnabled: options.AutomigrateEnabled,
 		debugEnabled:       options.DebugEnabled,
-	}
-
-	// Set the database driver name if not provided
-	if store.dbDriverName == "" {
-		store.dbDriverName = database.DatabaseType(store.db)
 	}
 
 	if store.automigrateEnabled {
@@ -76,33 +71,31 @@ func (st *storeImplementation) AutoMigrate() error {
 	return st.MigrateUp(context.Background())
 }
 
-// MigrateUp creates the audit table
+// MigrateUp creates the audit table.
+// Note: the neat schema builder does not expose a transaction handle, so the tx
+// parameter is accepted for interface compatibility but cannot be forwarded.
 func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) error {
-	var txToUse *sql.Tx
-	if len(tx) > 0 {
-		txToUse = tx[0]
+	if st.db.Schema().HasTable(st.auditTableName) {
+		if st.debugEnabled {
+			st.logger.Info("MigrateUp: table already exists", "table", st.auditTableName)
+		}
+		return nil
 	}
 
-	sqlStr := st.sqlAuditTableCreate()
-
-	if sqlStr == "" {
-		return errors.New("audit table create SQL is empty")
-	}
-
-	if st.debugEnabled {
-		st.logger.Info("Running migration", "sql", sqlStr)
-	}
-
-	var err error
-	if txToUse != nil {
-		_, err = txToUse.ExecContext(ctx, sqlStr)
-	} else {
-		_, err = st.db.ExecContext(ctx, sqlStr)
-	}
+	err := st.db.Schema().Create(st.auditTableName, func(table contractsschema.Blueprint) {
+		table.String(COLUMN_ID, 21)
+		table.Primary(COLUMN_ID)
+		table.String(COLUMN_OBJECT_TYPE, 100)
+		table.String(COLUMN_OBJECT_ID, 40)
+		table.Text(COLUMN_VALUE_OLD)
+		table.Text(COLUMN_VALUE_NEW)
+		table.String(COLUMN_AUTHOR_ID, 40)
+		table.DateTime(COLUMN_CREATED_AT)
+	})
 
 	if err != nil {
 		if st.debugEnabled {
-			st.logger.Error("Migration failed", "error", err)
+			st.logger.Error("MigrateUp failed", "error", err)
 		}
 		return err
 	}
@@ -110,72 +103,24 @@ func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) err
 	return nil
 }
 
-// MigrateDown drops the audit table
+// MigrateDown drops the audit table.
+// Note: the neat schema builder does not expose a transaction handle, so the tx
+// parameter is accepted for interface compatibility but cannot be forwarded.
 func (st *storeImplementation) MigrateDown(ctx context.Context, tx ...*sql.Tx) error {
-	var txToUse *sql.Tx
-	if len(tx) > 0 {
-		txToUse = tx[0]
+	if !st.db.Schema().HasTable(st.auditTableName) {
+		if st.debugEnabled {
+			st.logger.Info("MigrateDown: table does not exist", "table", st.auditTableName)
+		}
+		return nil
 	}
 
-	sqlStr := st.sqlAuditTableDrop()
-
-	if sqlStr == "" {
-		return errors.New("audit table drop SQL is empty")
-	}
-
-	if st.debugEnabled {
-		st.logger.Info("Running migration", "sql", sqlStr)
-	}
-
-	var err error
-	if txToUse != nil {
-		_, err = txToUse.ExecContext(ctx, sqlStr)
-	} else {
-		_, err = st.db.ExecContext(ctx, sqlStr)
-	}
-
+	err := st.db.Schema().Drop(st.auditTableName)
 	if err != nil {
 		if st.debugEnabled {
-			st.logger.Error("Migration failed", "error", err)
+			st.logger.Error("MigrateDown failed", "error", err)
 		}
 		return err
 	}
-
-	return nil
-}
-
-// DriverName finds the driver name from database
-func (st *storeImplementation) DriverName(db *sql.DB) string {
-	dv := reflect.ValueOf(db.Driver())
-	driverFullName := dv.Type().String()
-	if strings.Contains(driverFullName, "mysql") {
-		return "mysql"
-	}
-	if strings.Contains(driverFullName, "postgres") || strings.Contains(driverFullName, "pq") {
-		return "postgres"
-	}
-	if strings.Contains(driverFullName, "sqlite") {
-		return "sqlite"
-	}
-	if strings.Contains(driverFullName, "mssql") {
-		return "mssql"
-	}
-	return driverFullName
-}
-
-func (st *storeImplementation) SqlExec(sqlStr string) error {
-	if st.debugEnabled {
-		log.Println(sqlStr)
-	}
-
-	_, err := st.db.Exec(sqlStr)
-	if err != nil {
-		if st.debugEnabled {
-			log.Println(err)
-		}
-		return err
-	}
-
 	return nil
 }
 
@@ -183,8 +128,10 @@ func (st *storeImplementation) SqlExec(sqlStr string) error {
 func (st *storeImplementation) EnableDebugMode(debug bool) {
 	st.debugEnabled = debug
 	if debug {
+		st.db.EnableDebug()
 		st.logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	} else {
+		st.db.DisableDebug()
 		st.logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 	}
 }
@@ -201,71 +148,44 @@ func (st *storeImplementation) SetAuditTableName(tableName string) {
 
 // AuditGet retrieves an audit record by its ID
 func (st *storeImplementation) AuditGet(id string) (RecordInterface, error) {
-	if st.db == nil {
-		return nil, errors.New("database is not initialized")
-	}
-
 	if id == "" {
 		return nil, errors.New("audit ID is required")
 	}
 
-	query := goqu.Dialect(st.dbDriverName).From(st.auditTableName).
-		Where(goqu.C("id").Eq(id)).
-		Limit(1)
-
-	sqlStr, sqlParams, err := query.ToSQL()
+	record := &recordImplementation{}
+	err := st.db.Query().Table(st.auditTableName).Where("id", id).First(record)
 	if err != nil {
+		if err.Error() == "no rows found" {
+			return nil, nil
+		}
+		if st.debugEnabled {
+			st.logger.Debug("AuditGet error", "error", err)
+		}
 		return nil, err
 	}
 
-	if st.debugEnabled {
-		st.logger.Debug("AuditGet query", "query", sqlStr, "params", sqlParams)
-	}
-
-	// Execute the query and get results as a slice of maps
-	modelMaps, err := database.SelectToMapString(database.Context(context.Background(), st.db), sqlStr, sqlParams...)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(modelMaps) == 0 {
-		return nil, nil
-	}
-
-	// Convert the first result to a Record object
-	record := NewRecordFromExistingData(modelMaps[0])
 	return record, nil
 }
 
 // AuditList retrieves a list of audit records based on a query
 func (st *storeImplementation) AuditList(query RecordQueryInterface) ([]RecordInterface, error) {
-	// Build the select dataset
-	ds, _, err := query.ToSelectDataset(st.dbDriverName, st.auditTableName)
+	q, err := query.ToQuery(st.db)
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate SQL and parameters
-	sqlStr, sqlParams, err := ds.ToSQL()
+	var results []recordImplementation
+	err = q.Table(st.auditTableName).Get(&results)
 	if err != nil {
+		if st.debugEnabled {
+			st.logger.Debug("AuditList error", "error", err)
+		}
 		return nil, err
 	}
 
-	if st.debugEnabled {
-		st.logger.Debug("AuditList query", "query", sqlStr, "params", sqlParams)
-	}
-
-	// Execute the query and get results as a slice of maps
-	modelMaps, err := database.SelectToMapString(database.Context(context.Background(), st.db), sqlStr, sqlParams...)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert the maps to RecordInterface objects
-	records := make([]RecordInterface, 0, len(modelMaps))
-	for _, modelMap := range modelMaps {
-		record := NewRecordFromExistingData(modelMap)
-		records = append(records, record)
+	records := make([]RecordInterface, len(results))
+	for i := range results {
+		records[i] = &results[i]
 	}
 
 	return records, nil
@@ -273,31 +193,19 @@ func (st *storeImplementation) AuditList(query RecordQueryInterface) ([]RecordIn
 
 // AuditCount retrieves the count of audit records based on a query
 func (st *storeImplementation) AuditCount(query RecordQueryInterface) (int64, error) {
-	// Build the select dataset for count
-	ds, _, err := query.ToSelectDataset(st.dbDriverName, st.auditTableName)
+	q, err := query.ToQuery(st.db)
 	if err != nil {
 		return 0, err
-	}
-
-	// Convert to count query
-	countDs := ds.Select(goqu.COUNT("*"))
-
-	// Generate SQL and parameters
-	sqlStr, args, err := countDs.ToSQL()
-	if err != nil {
-		return 0, err
-	}
-
-	if st.debugEnabled {
-		log.Printf("AuditCount SQL: %s, Args: %v", sqlStr, args)
 	}
 
 	var count int64
-	err = st.db.QueryRow(sqlStr, args...).Scan(&count)
+	err = q.Table(st.auditTableName).Count(&count)
 	if err != nil {
+		if st.debugEnabled {
+			st.logger.Debug("AuditCount error", "error", err)
+		}
 		return 0, err
 	}
-
 	return count, nil
 }
 
@@ -307,20 +215,7 @@ func (st *storeImplementation) AuditDelete(id string) error {
 		return errors.New("audit ID is required")
 	}
 
-	query := goqu.Dialect(st.dbDriverName).
-		Delete(st.auditTableName).
-		Where(goqu.C("id").Eq(id))
-
-	sqlStr, args, err := query.ToSQL()
-	if err != nil {
-		return err
-	}
-
-	if st.debugEnabled {
-		log.Printf("AuditDelete SQL: %s, Args: %v", sqlStr, args)
-	}
-
-	_, err = st.db.Exec(sqlStr, args...)
+	_, err := st.db.Query().Table(st.auditTableName).Where("id", id).Delete()
 	return err
 }
 
@@ -329,45 +224,34 @@ func (st *storeImplementation) DebugEnable(debug bool) {
 	st.EnableDebugMode(debug)
 }
 
-// AuditCreate creates a new audit record
-func (s *storeImplementation) AuditCreate(record RecordInterface) error {
-	if s.db == nil {
-		return errors.New("database is not initialized")
-	}
-
+// AuditCreate creates a new audit record.
+// Accepts any RecordInterface and builds the insert map from the interface's
+// getters, so custom implementations are supported without type assertions.
+func (st *storeImplementation) AuditCreate(record RecordInterface) error {
 	if record.ID() == "" {
-		time.Sleep(1 * time.Millisecond)
-		record.SetID(uid.MicroUid())
+		record.SetID(neatuid.GenerateShortID())
 	}
 
-	record.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	if record.CreatedAt() == "" {
+		record.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	}
 
-	// Get the data from the record object
-	data := record.Data()
+	// Pass time.Time so the ORM handles dialect-specific timestamp serialisation.
+	row := map[string]any{
+		COLUMN_ID:          record.ID(),
+		COLUMN_OBJECT_TYPE: record.ObjectType(),
+		COLUMN_OBJECT_ID:   record.ObjectID(),
+		COLUMN_VALUE_OLD:   record.ValueOld(),
+		COLUMN_VALUE_NEW:   record.ValueNew(),
+		COLUMN_AUTHOR_ID:   record.AuthorID(),
+		COLUMN_CREATED_AT:  record.CreatedAtCarbon().StdTime(),
+	}
 
-	// Build the SQL query
-	sqlStr, sqlParams, err := goqu.Dialect(s.dbDriverName).
-		Insert(s.auditTableName).
-		Prepared(true).
-		Rows(data).
-		ToSQL()
-
+	err := st.db.Query().Table(st.auditTableName).Create(row)
 	if err != nil {
-		return err
+		if st.debugEnabled {
+			st.logger.Debug("AuditCreate error", "error", err)
+		}
 	}
-
-	if s.debugEnabled {
-		s.logger.Debug("Audit create query", "query", sqlStr, "params", sqlParams)
-	}
-
-	// Execute the query
-	_, err = database.Execute(database.Context(context.Background(), s.db), sqlStr, sqlParams...)
-
-	if err != nil {
-		return err
-	}
-
-	record.MarkAsNotDirty()
-
-	return nil
+	return err
 }

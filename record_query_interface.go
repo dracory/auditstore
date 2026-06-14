@@ -3,7 +3,8 @@ package auditstore
 import (
 	"time"
 
-	"github.com/doug-martin/goqu/v9"
+	"github.com/dracory/neat"
+	"github.com/dracory/neat/contracts/database/orm"
 )
 
 // RecordQueryInterface defines the interface for record query operations
@@ -32,8 +33,8 @@ type RecordQueryInterface interface {
 	// SetCreatedBefore filters records created before the specified time
 	SetCreatedBefore(t time.Time) RecordQueryInterface
 
-	// ToSelectDataset builds a goqu.SelectDataset with the current query parameters
-	ToSelectDataset(driver string, table string) (*goqu.SelectDataset, []interface{}, error)
+	// ToQuery builds a orm.Query with the current query parameters
+	ToQuery(db *neat.Database) (orm.Query, error)
 
 	// Validate ensures the query has valid parameters
 	Validate() error

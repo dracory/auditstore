@@ -1,14 +1,11 @@
 package auditstore
 
 import (
-	"github.com/dracory/dataobject"
 	"github.com/dromara/carbon/v2"
 )
 
 // RecordInterface represents an audit record in the system
 type RecordInterface interface {
-	dataobject.DataObjectInterface
-
 	// ID returns the unique identifier of the audit record
 	ID() string
 	SetID(id string)
