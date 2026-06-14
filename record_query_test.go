@@ -1,20 +1,11 @@
 package auditstore
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 
 	_ "modernc.org/sqlite"
 )
-
-func newTestDB() *sql.DB {
-	db, err := sql.Open("sqlite", ":memory:?parseTime=true")
-	if err != nil {
-		panic(err)
-	}
-	return db
-}
 
 func TestRecordQueryValidate(t *testing.T) {
 	t.Run("default query is valid", func(t *testing.T) {

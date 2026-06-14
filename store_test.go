@@ -1,7 +1,6 @@
 package auditstore
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -9,17 +8,8 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func initDB() *sql.DB {
-	db, err := sql.Open("sqlite", ":memory:?parseTime=true")
-	if err != nil {
-		panic(err)
-	}
-
-	return db
-}
-
 func initStore() (StoreInterface, error) {
-	db := initDB()
+	db := initTestDB()
 
 	store, err := NewStore(NewStoreOptions{
 		DB:                 db,
