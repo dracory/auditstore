@@ -2,14 +2,15 @@ package auditstore
 
 import (
 	"database/sql"
+	"testing"
 
 	_ "modernc.org/sqlite"
 )
 
-func initTestDB() *sql.DB {
+func initTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite", ":memory:?parseTime=true")
 	if err != nil {
-		panic(err)
+		t.Fatalf("Failed to open test database: %v", err)
 	}
 	return db
 }
