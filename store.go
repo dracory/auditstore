@@ -192,7 +192,7 @@ func (st *storeImplementation) AuditGet(id string) (RecordInterface, error) {
 	record := &recordImplementation{}
 	err := st.db.Query().Table(st.auditTableName).Where("id", id).First(record)
 	if err != nil {
-		if err.Error() == "no rows found" {
+		if errors.Is(err, sql.ErrNoRows) || err.Error() == "sql: no rows in result set" {
 			return nil, nil
 		}
 		if st.debugEnabled {
@@ -253,6 +253,9 @@ func (st *storeImplementation) AuditDelete(id string) error {
 	}
 
 	_, err := st.db.Query().Table(st.auditTableName).Where("id", id).Delete()
+	if err != nil && (errors.Is(err, sql.ErrNoRows) || err.Error() == "sql: no rows in result set") {
+		return nil
+	}
 	return err
 }
 
