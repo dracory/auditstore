@@ -192,7 +192,7 @@ func (st *storeImplementation) AuditGet(id string) (RecordInterface, error) {
 	record := &recordImplementation{}
 	err := st.db.Query().Table(st.auditTableName).Where("id", id).First(record)
 	if err != nil {
-		if err.Error() == "no rows found" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		if st.debugEnabled {
