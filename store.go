@@ -9,8 +9,8 @@ import (
 
 	"github.com/dracory/neat"
 	contractsschema "github.com/dracory/neat/contracts/database/schema"
-	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
+	"github.com/google/uuid"
 )
 
 // StoreInterface defines the interface for audit store operations
@@ -120,7 +120,7 @@ func (st *storeImplementation) MigrateUp(ctx context.Context, tx ...*sql.Tx) err
 	}
 
 	err := st.db.Schema().Create(st.auditTableName, func(table contractsschema.Blueprint) {
-		table.String(COLUMN_ID, 21)
+		table.String(COLUMN_ID, 36)
 		table.Primary(COLUMN_ID)
 		table.String(COLUMN_OBJECT_TYPE, 100)
 		table.String(COLUMN_OBJECT_ID, 40)
@@ -266,7 +266,9 @@ func (st *storeImplementation) DebugEnable(debug bool) {
 // getters, so custom implementations are supported without type assertions.
 func (st *storeImplementation) AuditCreate(record RecordInterface) error {
 	if record.ID() == "" {
-		record.SetID(neatuid.GenerateShortID())
+		if id, err := uuid.NewV7(); err == nil {
+			record.SetID(id.String())
+		}
 	}
 
 	if record.CreatedAt() == "" {

@@ -2,8 +2,8 @@ package auditstore
 
 import (
 	"github.com/dracory/neat/database/orm"
-	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
+	"github.com/google/uuid"
 )
 
 // RecordInterface represents an audit record in the system
@@ -42,7 +42,7 @@ type RecordInterface interface {
 
 // recordImplementation is the private implementation of RecordInterface
 type recordImplementation struct {
-	orm.ShortID
+	orm.StringID
 
 	ObjectTypeField string `db:"object_type"`
 	ObjectIDField   string `db:"object_id"`
@@ -56,7 +56,9 @@ type recordImplementation struct {
 // NewRecord creates a new audit record with default values
 func NewRecord() RecordInterface {
 	record := &recordImplementation{}
-	record.SetID(neatuid.GenerateShortID())
+	if id, err := uuid.NewV7(); err == nil {
+		record.SetID(id.String())
+	}
 	record.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	return record
 }
@@ -77,12 +79,12 @@ func NewRecordFromExistingData(data map[string]string) RecordInterface {
 
 // ID returns the unique identifier of the audit record
 func (r *recordImplementation) ID() string {
-	return r.ShortID.ID
+	return r.StringID.ID
 }
 
 // SetID sets the unique identifier of the audit record
 func (r *recordImplementation) SetID(id string) {
-	r.ShortID.ID = id
+	r.StringID.ID = id
 }
 
 // ObjectType returns the type of the audited object
