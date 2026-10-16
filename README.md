@@ -90,7 +90,7 @@ func main() {
 
 ## Key Concepts
 - **Store**: `NewStore(NewStoreOptions)` returns a `StoreInterface` backed by `storeImplementation`. It requires an initialized `*sql.DB` and the target table name.
-- **Record**: `NewRecord()` creates a mutable audit entry. IDs and timestamps default to `uid.MicroUid()` and the current UTC time (via `github.com/dromara/carbon/v2`).
+- **Record**: `NewRecord()` creates a mutable audit entry. IDs and timestamps default to `uuid.NewV7()` and the current UTC time (via `github.com/dromara/carbon/v2`).
 - **Query**: `NewRecordQuery()` produces a builder you can chain to filter, sort, and paginate audit results.
 
 ## API Reference
@@ -176,6 +176,6 @@ go test ./...
 ## Dependencies
 Auditstore relies on:
 - **`github.com/dracory/neat`** for ORM operations and schema management.
-- **`github.com/dracory/uid`** for unique ID generation.
+- Standard Go `uuid` package for unique ID generation (`uuid.NewV7()`).
 - **`github.com/dromara/carbon/v2`** for time handling.
 - **`modernc.org/sqlite`** in tests as an embedded driver; replace or supplement with your chosen driver in production.
