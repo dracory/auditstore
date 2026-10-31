@@ -6,7 +6,7 @@ require (
 	github.com/dracory/neat v0.60.1
 	github.com/dromara/carbon/v2 v2.7.0
 	github.com/google/uuid v1.6.0
-	modernc.org/sqlite v1.61.0
+	modernc.org/sqlite v1.61.1
 )
 
 require (
